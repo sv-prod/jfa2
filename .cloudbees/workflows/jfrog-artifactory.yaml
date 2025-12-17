@@ -1,0 +1,27 @@
+name: jfrog-artifactory
+kind: workflow
+apiVersion: automation.cloudbees.io/v1alpha1
+on:
+  push:
+    branches:
+      - "**"
+  workflow_dispatch:
+jobs:
+  upload-file-job:
+    steps:
+      - name: checkout-source-code
+        uses: cloudbees-io/checkout@v1
+      - name: Configure JFrog OCI credentials
+        uses: cloudbees-io/configure-oci-credentials@v1
+        with:
+          registry: cbjfrog.saas-preprod.beescloud.com
+          username: admin
+          password: ${{ secrets.JFROG_TOKEN }}
+      - id: build-container
+        name: Build and push container image to JFrog
+        uses: cloudbees-io/kaniko@v1
+        with:
+          destination: cbjfrog.saas-preprod.beescloud.com/jfrog-test-docker-target-repo/test-image:1.0.1
+          build-args: USER=cbp-dev,TOKEN=${{ secrets.GH_SECURITY_PAT }}
+          context: ${{ cloudbees.workspace }}
+          dockerfile: Dockerfile
